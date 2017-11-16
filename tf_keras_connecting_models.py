@@ -4,10 +4,18 @@ import numpy as np
 
 
 class TF_DenseLayer(tf.keras.models.Sequential):
-    def __init__(self, input_dim, out_dim):
+    def __init__(self, in_features, out_features):
         super(TF_DenseLayer, self).__init__()
-        self.add(tf.keras.layers.Dense(out_dim, input_dim=input_dim, activation='relu'))
-      
+        # self.add(tf.keras.layers.Dense(out_dim, input_dim=input_dim, activation='relu'))
+        self.add(tf.keras.layers.Dense(out_features, input_dim=in_features))
+
+        self.add(tf.layers.BatchNormalization())
+
+        # Activation
+        self.add(tf.keras.layers.LeakyReLU())
+
+        # Dropout
+        self.add(tf.layers.Dropout(rate=0.1))      
 
 # Recreate model in basic_graph_modular.py
 model_final = tf.keras.models.Sequential()
