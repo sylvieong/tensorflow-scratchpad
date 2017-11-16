@@ -6,7 +6,7 @@ import numpy as np
 class TF_DenseLayer(tf.keras.models.Sequential):
     def __init__(self, in_features, out_features):
         super(TF_DenseLayer, self).__init__()
-        # self.add(tf.keras.layers.Dense(out_dim, input_dim=input_dim, activation='relu'))
+
         self.add(tf.keras.layers.Dense(out_features, input_dim=in_features))
 
         self.add(tf.layers.BatchNormalization())
@@ -17,7 +17,83 @@ class TF_DenseLayer(tf.keras.models.Sequential):
         # Dropout
         self.add(tf.layers.Dropout(rate=0.1))      
 
-# Recreate model in basic_graph_modular.py
+class TF_CNN2DLayer(tf.keras.models.Sequential):
+    def __init__(self, input_shape, filters, conv_kernel_size, conv_stride=(1, 1), conv_padding='valid', conv_dilation=(1, 1), pool_kernel_size=(2, 2), pool_stride=None, pool_padding=(0, 0), maxpool_enable=False):
+
+        super(TF_CNN2DLayer, self).__init__()
+        data_format = 'channels_first'  # optimized for training on NVIDIA GPUs using cuDNN, reference https://www.tensorflow.org/performance/performance_guide#data_formats
+
+        self.add(tf.layers.Conv2D(filters=filters,
+                                            kernel_size=conv_kernel_size, strides=conv_stride, padding=conv_padding, data_format=data_format, dilation_rate=conv_dilation, input_shape=input_shape))
+
+
+        # BatchNorm2d
+        self.add(tf.layers.BatchNormalization(axis=1))  # axis=1 bacause con2d channels_first
+
+        # Activation
+        self.add(tf.keras.layers.LeakyReLU())
+
+        # MaxPool
+        if maxpool_enable:
+            self.add(tf.layers.MaxPooling2D(pool_size=pool_kernel_size,
+                                                      strides=pool_kernel_size if pool_stride is None else pool_stride,
+                                                      padding='same' if pool_padding == (0, 0) else 'valid',
+                                                      data_format=data_format))
+
+
+
+#------ Recreate VGG-like convnet from https://keras.io/getting-started/sequential-model-guide/ -----
+#from keras.layers import Dense, Dropout, Flatten
+#from keras.layers import Conv2D, MaxPooling2D
+#from keras.optimizers import SGD
+
+
+model_vgg = tf.keras.models.Sequential()
+# input: 100x100 images with 3 channels -> (100, 100, 3) tensors.
+# this applies 32 convolution filters of size 3x3 each.
+
+#model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(100, 100, 3)))
+conv0=TF_CNN2DLayer((100, 100, 3), 32, (3,3), pool_kernel_size=(2, 2), maxpool_enable=True)
+model_vgg.add(conv0)
+
+
+
+#model.add(Conv2D(32, (3, 3), activation='relu'))
+#model.add(MaxPooling2D(pool_size=(2, 2)))
+
+'''conv1=TF_CNN2DLayer((100,100,32), 32, (3,3), pool_kernel_size=(2, 2), maxpool_enable=True)
+model_vgg.add(conv1)
+model_vgg.add(tf.keras.layers.Dropout(0.25))
+'''
+
+print(model_vgg)
+
+'''
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+
+model.add(Flatten())
+model.add(Dense(256, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(10, activation='softmax'))
+
+sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+model.compile(loss='categorical_crossentropy', optimizer=sgd)
+
+# Generate dummy data
+x_train = np.random.random((100, 100, 100, 3)) # dimensions are probably: batch_size, image_rows, image_cols, image_channels
+y_train = tf.keras.utils.to_categorical(np.random.randint(10, size=(100, 1)), num_classes=10) #dimensions of size are probably: batchsize, 1
+x_test = np.random.random((20, 100, 100, 3))
+y_test = tf.keras.utils.to_categorical(np.random.randint(10, size=(20, 1)), num_classes=10)
+
+model.fit(x_train, y_train, batch_size=32, epochs=10)
+score = model.evaluate(x_test, y_test, batch_size=32)
+'''
+
+
+#------ Recreate model in basic_graph_modular.py -------
 model_final = tf.keras.models.Sequential()
 
 # Dense layer0
@@ -46,8 +122,8 @@ model_final.add(tf.keras.layers.Activation('softmax'))
 
 print(model_final)
 
-# TODO: 
-# how to train with label, optimization criterion (cross_entropy), optimization method (gradient descent)
+ 
+# train with label, optimization criterion (cross_entropy), optimization method (gradient descent)
 
 model_final.compile(optimizer='rmsprop',
               loss='categorical_crossentropy',
@@ -70,31 +146,3 @@ print(one_hot_labels.shape)
 # Train the model, iterating on the data in batches of 32 samples
 model_final.fit(data, one_hot_labels, epochs=10, batch_size=32)
 
-
-
-'''
-
-# Example
-# as first layer in a sequential model:
-model = tf.keras.models.Sequential()
-
-model.add(tf.keras.layers.Dense(32, input_shape=(16,)))
-
-#model.add(Dense(64, activation='tanh'))
-
-# now the model will take as input arrays of shape (*, 16)
-# and output arrays of shape (*, 32)
-
-# after the first layer, you don't need to specify
-# the size of the input anymore:
-model.add(tf.keras.layers.Dense(32))
-
-print(model)
-
-model_final = tf.keras.models.Sequential()
-
-model_final.add(model)
-
-
-print(model_final)
-'''
