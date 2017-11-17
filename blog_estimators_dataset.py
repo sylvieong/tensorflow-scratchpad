@@ -28,7 +28,7 @@ print("TensorFlow version: {}".format(tf_version))
 assert "1.4" <= tf_version, "TensorFlow r1.4 or later is needed"
 
 # Windows users: You only need to change PATH, rest is platform independent
-PATH = "/tmp/tf_dataset_and_estimator_apis"
+PATH = "/home/song/tmp/tf_dataset_and_estimator_apis"
 
 # Fetch and store Training and Test dataset files
 PATH_DATASET = PATH + os.sep + "dataset"
@@ -78,12 +78,39 @@ def my_input_fn(file_path, perform_shuffle=False, repeat_count=1):
         # Randomizes input using a window of 256 elements (read into memory)
         dataset = dataset.shuffle(buffer_size=256)
     dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
+
+    # before calling Dataset.batch(), the iterator returns one element at a time
+    # each element has two components: 4 features, 1 label
+    # to access the elements - create an iterator, and create and run a session
+    single_element_iterator = dataset.make_one_shot_iterator()
+    single_element_feature, single_element_label = single_element_iterator.get_next()
+
+    sess = tf.Session()
+    for i in range(10):
+        (feature_value, label_value) = sess.run((single_element_feature, single_element_label))
+        print('feature_value:')
+        print(feature_value)
+        print('label_value:')
+        print(label_value)
+
     dataset = dataset.batch(32)  # Batch size to use
     iterator = dataset.make_one_shot_iterator()
     batch_features, batch_labels = iterator.get_next()
+
     return batch_features, batch_labels
 
 next_batch = my_input_fn(FILE_TRAIN, True)  # Will return 32 random elements
+
+# the iterator created in my_input_fn() is from a batched dataset and so returns a batch of elements at a time
+# to access the elements - create and run a session
+sess = tf.Session()
+
+for i in range(3):
+    (feature_value, label_value) = sess.run(next_batch)
+    print('feature_value:')
+    print(feature_value)
+    print('label_value:')
+    print(label_value)
 
 # Create the feature_columns, which specifies the input to our model
 # All our input features are numeric, so use numeric_column for each one
