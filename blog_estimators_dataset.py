@@ -82,7 +82,7 @@ def my_input_fn(file_path, perform_shuffle=False, repeat_count=1):
     # before calling Dataset.batch(), the iterator returns one element at a time
     # each element has two components: 4 features, 1 label
     # to access the elements - create an iterator, and create and run a session
-    single_element_iterator = dataset.make_one_shot_iterator()
+    '''single_element_iterator = dataset.make_one_shot_iterator()
     single_element_feature, single_element_label = single_element_iterator.get_next()
 
     sess = tf.Session()
@@ -92,6 +92,7 @@ def my_input_fn(file_path, perform_shuffle=False, repeat_count=1):
         print(feature_value)
         print('label_value:')
         print(label_value)
+    '''
 
     dataset = dataset.batch(32)  # Batch size to use
     iterator = dataset.make_one_shot_iterator()
